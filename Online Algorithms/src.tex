@@ -1,0 +1,153 @@
+\documentclass[11pt]{ctexart}
+\usepackage[a4paper,width=150mm,top=25mm,bottom=25mm]{geometry}
+
+\setmainfont{Caladea}
+
+%% 也可以选用其它字库：
+% \setCJKmainfont[%
+%   ItalicFont=AR PL KaitiM GB,
+%   BoldFont=Noto Sans CJK SC,
+% ]{Noto Serif CJK SC}
+% \setCJKsansfont{Noto Sans CJK SC}
+% \renewcommand{\kaishu}{\CJKfontspec{AR PL KaitiM GB}}
+
+
+\usepackage{minted}
+
+\usepackage[breaklinks]{hyperref}
+\usepackage{amsmath}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proof}{Proof}[section]
+
+\setlength{\parindent}{0pt}
+
+\title{\Huge 第十二讲  \ \ 在线算法}
+
+\author{主讲教师:\  张国川
+\\ 讲义整理: \ 温子奇}
+
+\begin{document}
+
+\maketitle
+
+%概述本节主要内容、结构（类似摘要）
+
+
+
+\section{Competitive Analysis}
+
+在线算法的性能通过一种类似于近似比的概念来衡量，即\textbf{competitive ratio};\\
+
+若A表示在线算法，OPT表示相同问题的最优离线(offline)算法，\\
+对于输入I，A(I)表示该算法的消耗，OPT(I)表示最优解的消耗，则competitive ratio定义如下：\\
+设$c$为competitive ratio，对于最小化问题，$\forall I$，存在常数$\beta$使得\\
+$$A(I) \leq c*OPT(I)+\beta$$
+同时，我们称这一算法为c-competitive算法。
+
+\section{ k-Server Problem}
+
+\subsection{特殊情况:paging problem}
+首先考虑一个操作系统或体系结构中的常见问题，它是k-Server Problem的一种特殊情况；\\
+
+有容量为$k$ pages的cache以及容量为$n$ pages的主存；\\
+
+访问cache中的数据没有消耗，而如果访问的数据不在cache中，则必须将其从主存中移动到cache中，记消耗为1。\\
+
+目标：对于一段请求序列，要求总cost最小化。\\
+
+\subsection{问题描述}
+对于一个加权网络$G=(V,E)$，有$K$个server在初始分布在某些顶点上;\\
+请求集合$\sigma=(r_1,r_2,……,r_n)$逐次到来（每个请求发生在一个顶点上）\\
+当一个请求发生时，必须有一个server存在于这个顶点上，否则就需要分配一个servver前往这个顶点；\\
+目标：将总的路程消耗（每个server移动路程的总和）最小化。\\
+
+可以注意到，当网络为完全图时，且所有边权均为1时，k-Server Problem即:paging problem。
+
+\subsection{贪心算法}
+
+k-Server Problem的贪心算法：当每次请求发生时，派遣离这一顶点最近的server前往该顶点。\\
+
+这一贪心算法并不能提供一个可观的解，考虑如下最坏情况：\\
+
+对于一个只有三个顶点的图，同时有两个servers(server可以位于任意位置)，顶点C位于顶点A，B之间，且$d(A,C)<d(B,C)$\\
+
+发生的请求序列为：$\sigma=(A,B,C,A,C,A,C,A,C……)$\\
+
+可以注意到，这种情况下会存在一个servers不断往返于A,C之间，而位于B的server并不会移动，而最优解显然是两个servers位于A与C，则在之后不会发生任何移动。
+
+
+
+\subsection{k-Server on a Line}
+接下来我们将给出一种算法，从较为特殊的情况开始，逐渐一般化，首先考虑一条线上的k-Server问题。
+
+\subsubsection{Algorithm DC}
+如果请求发生在server的凸包之外，则派遣距离它最近的server前往（和贪心一致）；\\
+
+如果请求发生在两个server之间，则两个servers将同时前往这一顶点（以相同的速度），先到达一方将进行服务，而此时未到达的一方停止；\\
+
+注意这里“停止”的含义,实际上未到达的server仍然位于先前的顶点，但是如果之后的请求发生在相同位置，它将继续先前走过的路开始前进，这可以等价地视作server所在的这一点与请求发生的顶点之间的边的权重降低了。\\
+
+继续考虑上述贪心算法中的最坏情况，这一算法可以有效避免这个情况。
+
+\subsubsection{Analysis}
+\begin{theorem}\\
+DC算法是K-competitive算法；
+\end{theorem}
+
+\begin{proof}\\
+通过Amortized Analysis的Potential Function方式来证明这一点。\\
+我们将构造一个势能函数$\Phi$，它具有如下特点：\\
+
+假设最优解OPT与DC算法，对于相同问题同时进行运算，\\
+如果OPT将server移动了距离$d$，$\Phi$至多增加$kd$,\\
+如果DC将server移动了距离$d$，$\Phi$最少减少$d$；\\
+假设$\Phi_i$是第i次请求发生后势能函数的值；\\
+则n次请求发生后势能函数的增量：$\Phi_n-\Phi_0$，最多为$k*OPT(\sigma)-DC(\sigma)$。\\
+
+Potential Function如下：\\
+$M_{min}$表示OPT的servers与DC的servers之间最小权完美匹配的cost。\\
+$s_i$表示DC的第i个server所在的顶点\\
+$\Sigma=\Sigma_{i<j}d(s_i,s_j)$\\
+则势能函数为：$\Phi=k*M_{min}+\Sigma$\\
+
+(PS:别问是怎么构造的，问就是试出来的)\\
+
+可以依次考虑，一次请求下仅有OPT移动了server/仅有DC移动了server/双方都移动了server的情况，可以发现构造的函数是符合之前的要求的。\\
+\end{proof}
+
+\subsection{k-Server on a Tree}
+在树图的情况下，考虑如下定义：\\
+
+一个请求的\textbf{neighbor}:当一个server所在的顶点与请求所在的顶点之间的通路上没有其他server，则称这个server为该请求的neighbor。\\
+
+当一个请求发生时，一个请求所有的neighbor都以相同的速度向请求派遣（执行方式与之前的k-Server on a Line一致）。\\
+
+同样可以证明这也是一个K-competitive算法。
+
+\subsubsection{Algorithm DC-Tree}
+
+
+\subsection{k-Server on a General Network}
+
+定义一个算法的configuration $C$ 为K个servers所在顶点的集合。
+
+\subsection{Work-Function Algorithm (WFA)}
+定义Working Function $W(C)$表示从初始configuration $C_0$ 经过请求序列$\sigma_i$，到最终的configuration $C$的最优cost。\\
+
+函数$arg min()$表示使得()内函数式达到最小时变量的取值;\\
+
+则对于请求$r_{i+1}$,该算法将移动server $s \in C$至点$r$\\
+$s=arg min_{x \in C}{W(C-x+r)+d(x,r)}$\\
+
+可以证明这是一个(2k-1)-competitive算法\\
+
+
+\subsection{k-Server的相关猜想}
+1. k-Server问题存在一个k-competitive的在线算法;\\
+
+2. WFA本身是一个 k-competitve的算法（只不过没人给出约束为紧的例子）。\\
+
+\end{document}
+
+
