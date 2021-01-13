@@ -1,2 +1,2 @@
-# Operations_Research_Notes
- Lecture notes for AOR class
+# Operations Research Notes & Code
+ Lecture notes for AOR class && Code of  linear programming (simplex method)
